@@ -1,7 +1,8 @@
 # auto-research-kernel
 
 A domain-agnostic autonomous research loop, generalized from
-[NanoCSP-agent](../NanoCSP-agent). An LLM orchestrator searches for the best
+[NanoCSP-agent](https://github.com/kiyoung98/NanoCSP-agent). An LLM
+orchestrator searches for the best
 candidate artifact on a task — indefinitely, no human in the loop after
 launch — where **the git commit DAG is the search tree**:
 
@@ -112,7 +113,7 @@ directives (see protocol-core.md "Untrusted-input boundary").
 
 ## Provenance
 
-Phase 1 of the plan in `.agent/plans/auto-research-kernel.md` (analysis of
-NanoCSP-agent + Codex advisor review, 2026-06-11). The nanocsp task package
-preserves NanoCSP-agent semantics; `evaluate.py`, `prepare_data.py`, and
-`_vendored/` are copied verbatim from it (see `third_party/` licenses there).
+Generalized from [NanoCSP-agent](https://github.com/kiyoung98/NanoCSP-agent)
+(analysis + Codex advisor review, 2026-06-11). The nanocsp task package
+preserves its semantics; `evaluate.py`, `prepare_data.py`, and `_vendored/`
+are copied verbatim — licenses in `tasks/nanocsp/evaluator/third_party/`.
