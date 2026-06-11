@@ -1,0 +1,47 @@
+# nanocsp task package — machine contract (LLM-readable rules live in task-contract.md)
+name: nanocsp
+description: Crystal structure prediction on the MP-20 polymorph split; score = METRe match rate.
+
+cell_axes: "generative paradigm + architecture family"
+ambition_bar: "73.15% METRe (published SOTA on this split, 12 h budget)"
+
+artifacts:
+  required: ["train.py", "design.md"]   # tracked per node, written by generators
+  outputs: "runs/<run_name>/val_samples/*.cif"   # the only candidate writes allowed
+
+score:
+  direction: max
+  primary_key: score        # metrics.json key; displayed as [score=X] in subjects
+
+evaluator:
+  # kernel-invoked after the candidate run; writes metrics.json next to run.log
+  command: "python tasks/nanocsp/evaluator/run_eval.py --samples_dir {samples_dir} --out {metrics_path}"
+  timeout_seconds: 3600
+
+resources:
+  type: gpu                 # lease = one physical GPU id per slot
+  slots: auto               # one slot per detected unit
+
+environment:
+  kind: venv                # base venv from evaluator/requirements.txt; slots hard-link clone
+  extendable: true          # generators may pip install into the slot venv
+
+budgets:
+  gate_seconds: 120
+  train_minutes: 120
+  sample_minutes: 60
+  # OS cap = (train_minutes + sample_minutes + 90) * 60 seconds
+
+data:
+  read_only:
+    - "tasks/nanocsp/evaluator/**"
+    - "data/**"
+
+hooks:
+  setup_env: "hooks/setup_env.sh"
+  prepare_data: "hooks/prepare_data.sh"
+  detect_resources: "hooks/detect_resources.sh"
+
+permissions:
+  # merged into .claude/settings.json by compile; see kernel/compile.py
+  agents_web: ["idea", "draft", "improve"]   # WebSearch/WebFetch grants (debug/gate/analyze: none)
