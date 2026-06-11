@@ -82,12 +82,31 @@ def main() -> int:
         err("prompts/gate.md must define SECTION: stages (the gate is task-defined)")
 
     # --- hooks ---
+    # Hooks run arbitrary shell at bootstrap — the main escalation surface of
+    # a task package. Flag dangerous capabilities for human review before a
+    # third-party package is ever launched (warnings, not errors: a task may
+    # legitimately need e.g. a download — but a human must have seen it).
+    DANGEROUS = {
+        "network egress": r"\b(curl|wget|nc|netcat|scp|rsync)\b|requests\.|urllib|http[s]?://",
+        "remote shell": r"\bssh\b",
+        "privilege": r"\bsudo\b|\bsu\b ",
+        "containers": r"\bdocker\b|\bpodman\b",
+        "cloud CLI": r"\b(aws|gcloud|az)\b",
+        "credentials": r"\.ssh/|\.aws/|\.config/|/etc/|API_KEY|SECRET|TOKEN",
+        "git ref mutation": r"git push|git update-ref|git filter",
+        "package install": r"pip3?[\"']?\s+install|-m pip|conda install|apt(-get)?\s+install|npm install",
+    }
     for hook_name, rel in (cfg.get("hooks") or {}).items():
         hook = task_dir / rel
         if not hook.exists():
             err(f"hooks.{hook_name}: missing file {rel}")
-        elif not hook.stat().st_mode & stat.S_IXUSR:
+            continue
+        if not hook.stat().st_mode & stat.S_IXUSR:
             err(f"hooks.{hook_name}: {rel} not executable (chmod +x)")
+        text = hook.read_text(errors="replace")
+        for label, pattern in DANGEROUS.items():
+            if re.search(pattern, text):
+                warn(f"hooks.{hook_name}: dangerous capability [{label}] — review {rel} before launch")
 
     # --- skeleton variable coverage ---
     derivable = {"task_name", "run_tag", "cell_axes", "ambition_bar", "artifacts_list", "artifacts_bullets"}

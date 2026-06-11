@@ -26,7 +26,10 @@ protocol-core.md            invariant rules every subagent reads
 kernel/
   agent-skeletons/          6 generic agent prompts with {{section:...}} slots
   compile.py                render skeletons + task sections -> .claude/agents/ + campaigns/<tag>/.resolved/
-  validate.py               task-package preflight (schema, files, hooks)
+  validate.py               task-package preflight (schema, files, hooks + dangerous-capability scan)
+  adapters/resource.py      slot -> lease (gpu: CUDA_VISIBLE_DEVICES; cpu: OMP threads; api: key index)
+  adapters/environment.py   slot env setup (venv hard-link clone / none)
+  tests/                    pytest suite (compile, validate, score contract, adapters)
 tasks/<name>/
   task.yml                  machine contract: artifacts, score, evaluator, resources, budgets, hooks
   task-contract.md          LLM-readable domain rules (data, candidate contract)
@@ -45,9 +48,14 @@ The evaluator — kernel-invoked, read-only from candidate slots — writes
 The kernel parses the JSON, never stdout. `score.direction` (max|min) is
 frozen per campaign.
 
+Two task packages ship as references: **nanocsp** (GPU, max-direction,
+ML training — preserves NanoCSP-agent semantics) and **tsp-heuristics**
+(CPU-only, min-direction, non-ML — the generalization proof).
+
 ## Running a campaign
 
 ```bash
+python -m pytest kernel/tests/ -q             # kernel self-test
 python kernel/validate.py tasks/nanocsp        # must pass
 python kernel/compile.py --task nanocsp --run-tag may31a
 claude --permission-mode dontAsk               # never --dangerously-skip-permissions

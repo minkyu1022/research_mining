@@ -25,6 +25,8 @@ the task package (`tasks/<task>/`). Main reads all three.
    - `hooks/detect_resources` — prints one JSON line describing the resource
      pool (e.g. `{"type":"gpu","units":[0,1,2],"vram_total_mb":24210}`).
      Slots = one per unit (or `resources.slots` from task.yml if fixed).
+     Per-slot env vars + manifest fields come from the resource adapter:
+     `python kernel/adapters/resource.py lease --pool '<json>' --slot N`.
 4. **Freeze params** to `campaigns/<run_tag>/campaign.json`: `{task, run_tag,
    resources, n_slots, budgets, memory_scope, node_scoring, score_direction}`.
    This file — not prompt memory — is the durable source of truth; re-read it
@@ -131,9 +133,11 @@ across slots.
    env interpreter path, `fetch_hints` (run-scoped).
 2. **Worktree + env.** `git worktree add -b $BRANCH $WT <parent_ref>`
    (parent ref = `parent_sha` or `agent/root`). Link data per task hooks'
-   layout. Slot env: environment adapter — for `environment.kind: venv`,
-   hard-link clone parent's env (`cp -al`) else the base env. Then the
-   `[RUNNING]` empty commit (strategy + cell + parent).
+   layout. Slot env via the environment adapter:
+   `python kernel/adapters/environment.py setup --kind <environment.kind>
+   --wt $WT [--parent-env runs/<run_tag>/<parent_sha>/.venv]` — its
+   `python:` output line is the slot interpreter for every manifest. Then
+   the `[RUNNING]` empty commit (strategy + cell + parent).
 3. **Dispatch generator** (`draft`|`improve`|`debug`) with the manifest.
    Parallel Agent calls when multiple slots are idle.
 4. **Verify writes**: every `artifacts.required` file exists non-empty in

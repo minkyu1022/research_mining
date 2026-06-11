@@ -1,0 +1,45 @@
+# tsp-heuristics task package — machine contract
+# Generalization proof for the kernel: non-ML, CPU-only, min-direction score.
+name: tsp-heuristics
+description: Search for the best TSP heuristic solver; score = mean tour-length ratio vs nearest-neighbor baseline (lower is better).
+
+cell_axes: "search paradigm + move/operator family"
+ambition_bar: "mean NN-ratio <= 0.80 within the solve budget (2-opt-quality or better on all sizes)"
+
+artifacts:
+  required: ["solver.py", "design.md"]
+  outputs: "runs/<run_name>/tours/*.tour"
+
+score:
+  direction: min
+  primary_key: score
+
+evaluator:
+  command: "python tasks/tsp-heuristics/evaluator/run_eval.py --tours_dir {samples_dir} --out {metrics_path}"
+  timeout_seconds: 600
+
+resources:
+  type: cpu
+  slots: 4                 # fixed; detect_resources reports the pool, slots capped here
+
+environment:
+  kind: venv
+  extendable: true
+
+budgets:
+  gate_seconds: 60
+  solve_minutes: 30
+  # OS cap = (solve_minutes + 10) * 60 seconds
+
+data:
+  read_only:
+    - "tasks/tsp-heuristics/evaluator/**"
+    - "data/tsp/**"
+
+hooks:
+  setup_env: "hooks/setup_env.sh"
+  prepare_data: "hooks/prepare_data.sh"
+  detect_resources: "hooks/detect_resources.sh"
+
+permissions:
+  agents_web: ["idea", "draft", "improve"]
